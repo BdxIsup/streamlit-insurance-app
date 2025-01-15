@@ -1,4 +1,6 @@
 import streamlit as st
+import requests
+import zipfile
 import pandas as pd
 
 # Ajouter un style CSS pour personnaliser les couleurs
@@ -50,6 +52,17 @@ try:
 
 except Exception as e:
     st.sidebar.error(f"Une erreur est survenue avec les logos : {e}")
+ 
+# Charger les données
+# Lien brut (raw)
+zip_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/datavis_long_lat_with_grupo.zip"
+# Télécharger et décompresser
+response = requests.get(zip_url)
+zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+ 
+# Lire un fichier CSV spécifique à l'intérieur du ZIP
+with zip_file.open('datavis_long_lat_with_grupo.csv') as file:
+    data = pd.read_csv(file)
  
 try:
     
