@@ -7,6 +7,7 @@ from streamlit_folium import st_folium
 import branca.colormap as cm
 import pandas as pd
 import plotly.express as px
+import joblib
 
 # Ajouter un style CSS pour personnaliser les couleurs
 def add_custom_styles():
@@ -446,11 +447,136 @@ try:
             # Afficher la carte dans Streamlit
             st_folium(m, width=700, height=500)
 
-        # **Onglet 6 : Tarification**
+        # **Onglet 4 : Tarification**
         with tabs[4]:
             st.markdown("""
             Cet onglet fournit un outil réalisant une tarification simplifiée selon une logique de fréquence-sévérité avec deux modèles XGBOOST.
             """)
+            st.markdown("""
+            Cet onglet fournit un outil réalisant une tarification simplifiée selon une logique de fréquence-sévérité avec deux modèles XGBOOST.
+            """)
+
+            # Fonction pour télécharger un fichier depuis une URL
+            def download_model(url, filename):
+                response = requests.get(url)
+                if response.status_code == 200:
+                    with open(filename, 'wb') as file:
+                        file.write(response.content)
+                    return filename
+                else:
+                    st.error(f"Erreur lors du téléchargement du modèle : {url}")
+                    return None
+
+            # Ajouter un style CSS pour personnaliser les boutons et les hypothèses
+            st.markdown(
+                """
+                <style>
+                /* Style pour le bouton prédire */
+                .stButton > button {
+                    background-color: #FF4B4B;
+                    color: white;
+                    font-size: 18px;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    border: none;
+                    cursor: pointer;
+                    display: block;
+                    margin: 20px auto; /* Centrer horizontalement */
+                }
+                .stButton > button:hover {
+                    background-color: #D03434;
+                }
+
+                /* Style pour la boîte des hypothèses */
+                .hypotheses-box {
+                    background-color: #f0f8ff; /* Bleu clair */
+                    padding: 15px;
+                    margin-bottom: 20px;
+                    border-radius: 8px;
+                    border: 1px solid #dcdcdc;
+                }
+
+                /* Style pour les boîtes de sélection */
+                .stSelectbox {
+                    background-color: #f5f5f5 !important; /* Gris clair */
+                    color: #333333 !important; /* Texte gris foncé */
+                    border: 1px solid #dcdcdc !important; /* Bordure grise */
+                    padding: 10px !important;
+                    border-radius: 8px !important;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Fonction principale pour la tarification
+            def run_tarification():
+                st.title("Outil de tarification - Fréquence & Sévérité")
+
+                # Téléchargement des modèles
+                model_frequency_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/model_pipeline_frequency.pkl"
+                model_severity_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/model_pipeline_severity.pkl"
+
+                frequency_model_file = download_model(model_frequency_url, "model_pipeline_frequency.pkl")
+                severity_model_file = download_model(model_severity_url, "model_pipeline_severity.pkl")
+
+                if not frequency_model_file or not severity_model_file:
+                    return
+
+                try:
+                    # Charger les modèles depuis les fichiers téléchargés
+                    model_frequency = joblib.load(frequency_model_file)
+                    model_severity = joblib.load(severity_model_file)
+                except Exception as e:
+                    st.error(f"Erreur lors du chargement des modèles : {e}")
+                    return
+
+                # Récupérer les catégories pour les colonnes
+                preprocessor = model_frequency.named_steps['preprocessor']
+                encoder = preprocessor.named_transformers_['cat'].named_steps['onehot']
+                categories = encoder.categories_
+                cat_cols = preprocessor.transformers_[0][1].feature_names_in_
+
+                # Entrées utilisateur
+                st.subheader("Sélectionnez les caractéristiques de tarification :")
+                inputs = {}
+                col1, col2 = st.columns(2)
+                for i, col in enumerate(cat_cols):
+                    label_french = {
+                        "DrivAge": "Tranche d'âge du conducteur :",
+                        "HadRob": "A-t-il subi au moins un vol ?",
+                        "HadPartColl": "A-t-il subi au moins une collision partielle ?",
+                        "HadTotColl": "A-t-il subi au moins une collision totale ?",
+                        "HadFire": "A-t-il subi au moins un incendie ?",
+                        "HadOther": "A-t-il subi d'autres dommages non répertoriés ?",
+                        "VehYear_Class": "Année du modèle de véhicule :",
+                        "Region": "Région :",
+                        "VehGroup_bin": "Catégorie de véhicule :",
+                    }.get(col, col)
+
+                    with col1 if i % 2 == 0 else col2:
+                        inputs[col] = st.selectbox(f"{label_french}", options=categories[i])
+
+                # Bouton de prédiction
+                if st.button("Prédire"):
+                    try:
+                        # Préparer les données d'entrée
+                        new_observation = pd.DataFrame([inputs])
+
+                        # Prédictions
+                        freq_prediction = model_frequency.predict(new_observation)[0]
+                        sev_prediction = model_severity.predict(new_observation)[0]
+
+                        # Calcul de la prime pure
+                        prime_pure = freq_prediction * sev_prediction
+
+                        # Afficher les résultats
+                        st.success(f"Montant de la prime pure annuelle prédite : {prime_pure:,.2f} R$")
+                    except Exception as e:
+                        st.error(f"Une erreur est survenue pendant la prédiction : {e}")
+
+            # Appel de la fonction dans l'onglet Tarification
+            run_tarification()
             # **Onglet 5 : Interpretation Modèle**
         with tabs[5]:
             st.title("Interpretations des Modèles")
