@@ -252,7 +252,6 @@ try:
         # **Onglet 3 : Analyse**
         with tabs[2]:
             st.title("Analyse des indemnités")
-            st.title("Analyse des indemnités")
 
             # Répartition des indemnités par tranche d'âge
             st.header("Indemnité moyenne par tranche d'âge")
@@ -375,9 +374,6 @@ try:
         # **Onglet 4 : Cartographie**
         with tabs[3]:
             st.header("Visualisation du coût des sinistres par état")
-            st.header("Visualisation du coût des sinistres par état")
-            
-            
         
             carto_data_path = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/Aggregated_Claims_Data_by_Region.csv"
             carto_data = pd.read_csv(carto_data_path)
