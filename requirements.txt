@@ -10,6 +10,7 @@ branca==0.5.0
 matplotlib==3.6.2
 
 # Machine Learning
+Cython==0.29.36
 scikit-learn==1.2.2
 joblib==1.2.0
 shap==0.41.0
