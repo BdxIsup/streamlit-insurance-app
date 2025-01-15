@@ -8,6 +8,11 @@ import branca.colormap as cm
 import pandas as pd
 import plotly.express as px
 import joblib
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.inspection import PartialDependenceDisplay
 
 # Ajouter un style CSS pour personnaliser les couleurs
 def add_custom_styles():
