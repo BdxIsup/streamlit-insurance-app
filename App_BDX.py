@@ -1,21 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import folium
-from streamlit_folium import st_folium
-import branca.colormap as cm
-import requests
-import zipfile
-import io
-import plotly.express as px
-import matplotlib.pyplot as plt
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.inspection import PartialDependenceDisplay
-import shap
-import joblib
 
 # Ajouter un style CSS pour personnaliser les couleurs
 def add_custom_styles():
@@ -45,12 +29,6 @@ def add_custom_styles():
 
 # Appliquer le style personnalisé
 add_custom_styles()
-
-
- 
-# URLs des logos hébergés sur GitHub
-logo_isup_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/Logo-ISUP.jpg"
-logo_gov_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/gov.png"
  
  
 try:
@@ -69,19 +47,6 @@ try:
 
 except Exception as e:
     st.sidebar.error(f"Une erreur est survenue avec les logos : {e}")
-
-
-
-# Charger les données
-# Lien brut (raw)
-zip_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/datavis_long_lat_with_grupo.zip"
-# Télécharger et décompresser
-response = requests.get(zip_url)
-zip_file = zipfile.ZipFile(io.BytesIO(response.content))
- 
-# Lire un fichier CSV spécifique à l'intérieur du ZIP
-with zip_file.open('datavis_long_lat_with_grupo.csv') as file:
-    data = pd.read_csv(file)
  
 try:
     
