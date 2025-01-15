@@ -240,6 +240,126 @@ try:
         # **Onglet 3 : Analyse**
         with tabs[2]:
             st.title("Analyse des indemnités")
+            st.title("Analyse des indemnités")
+
+            # Répartition des indemnités par tranche d'âge
+            st.header("Indemnité moyenne par tranche d'âge")
+            age_indemnity = data.groupby('AGE_Group')['INDENIZ'].mean().reset_index()
+            age_fig = px.bar(
+                age_indemnity,
+                x='AGE_Group',
+                y='INDENIZ',
+                title="Indemnité moyenne par tranche d'âge",
+                labels={'INDENIZ': 'Indemnité moyenne (R$)', 'AGE_Group': 'Tranche d\'âge'},color_discrete_sequence=["#6EAA6B"]
+            )
+            st.plotly_chart(age_fig, use_container_width=True)
+
+            # Indemnité totale par modèle de véhicule
+            st.header("Indemnité totale par modèle de véhicule")
+
+            # Grouper les données par groupe et calculer l'indemnité totale
+            group_indemnity = data.groupby('GRUPO')['INDENIZ'].sum().reset_index()
+
+            # Trier les groupes par indemnité totale décroissante
+            group_indemnity = group_indemnity.sort_values(by='INDENIZ', ascending=False)
+
+            # Ne conserver que les 10 premiers groupes
+            top_10_indemnity = group_indemnity.head(10)
+
+            # Créer un graphique horizontal pour le top 10
+            group_indemnity_fig = px.bar(
+                top_10_indemnity,
+                x='INDENIZ',
+                y='GRUPO',
+                orientation='h',
+                title="Top 10 des véhicules par indemnité totale",
+                labels={'INDENIZ': 'Indemnité Totale (R$)', 'GRUPO': 'Véhicules'},color_discrete_sequence=["#8CCB87"]
+            )
+
+            # Configurer l'apparence du graphique
+            group_indemnity_fig.update_layout(
+                height=600,
+                xaxis=dict(title="Indemnité totale (R$)"),
+                yaxis=dict(title="Groupe", automargin=True, categoryorder='total ascending')
+            )
+
+            # Afficher le graphique
+            st.plotly_chart(group_indemnity_fig, use_container_width=True)
+            st.header("Indemnité par cause de sinistre")
+    
+           # Mapping des valeurs de CAUSA
+            causa_mapping = {
+                1: "Vol/Rapt",
+                2: "Vol",
+                3: "Rapt",
+                4: "Collision partielle",
+                5: "Collision avec indemnisation intégrale",
+                6: "Incendie",
+                7: "Assistance 24 heures",
+                9: "Autres"
+            }
+
+            # Ajouter une colonne mappée dans le DataFrame
+            data['CAUSA_MAPPED'] = data['CAUSA'].map(causa_mapping)
+
+            # Ajouter un boxplot dans le troisième onglet
+            with tabs[2]:
+                
+                
+                
+                # Créer un boxplot avec Plotly Express
+                causa_boxplot_mapped = px.box(
+                    data,
+                    x='CAUSA_MAPPED',
+                    y='INDENIZ',
+                    title="Relation entre la cause et l'indemnité du sinistre",
+                    labels={'CAUSA_MAPPED': 'Cause de sinistre', 'INDENIZ': 'Indemnité (R$)'},color_discrete_sequence=["#6EAA6B"]
+                )
+                
+                # Configurer le graphique
+                causa_boxplot_mapped.update_layout(
+                    xaxis=dict(title="Cause de sinistre"),
+                    yaxis=dict(title="Indemnité (R$)"),
+                    height=500,
+                    width=800
+                )
+                
+                # Afficher le graphique dans Streamlit
+                st.plotly_chart(causa_boxplot_mapped, use_container_width=True)
+                # Ajouter un mapping des types de couverture
+                coverage_mapping = {
+                    1: "Couverture complète",
+                    2: "Couverture incendie et vol",
+                    3: "Couverture incendie",
+                    4: "Indemnisation intégrale",
+                    5: "Couverture collision et incendie",
+                    9: "Autres"
+                }
+
+                # Mapper les types de couvertures
+                data['COBERTURA_MAPPED'] = data['COBERTURA'].map(coverage_mapping)
+
+                # Créer un boxplot des indemnités par type de couverture
+                coverage_boxplot = px.box(
+                    data,
+                    x='COBERTURA_MAPPED',
+                    y='INDENIZ',
+                    title="Indemnité par type de couverture",
+                    labels={'COBERTURA_MAPPED': 'Type de couverture', 'INDENIZ': 'Indemnité (R$)'},color_discrete_sequence=["#6EAA6B"]
+                )
+
+                # Mettre à jour le style du graphique
+                coverage_boxplot.update_layout(
+                    xaxis_title="Type de couverture",
+                    yaxis_title="Indemnité (R$)",
+                    height=600,
+                    width=800
+                )
+
+                # Afficher le graphique dans Streamlit
+                st.header("Indemnité par type de couverture")
+                
+                st.plotly_chart(coverage_boxplot, use_container_width=True)
         # **Onglet 4 : Cartographie**
         with tabs[3]:
             st.header("Visualisation du coût des sinistres par état")
