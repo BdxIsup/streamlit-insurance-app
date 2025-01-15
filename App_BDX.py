@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import zipfile
+import io
 import pandas as pd
 
 # Ajouter un style CSS pour personnaliser les couleurs
