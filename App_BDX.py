@@ -2,7 +2,9 @@ import streamlit as st
 import requests
 import zipfile
 import io
-
+import folium
+from streamlit_folium import st_folium
+import branca.colormap as cm
 import pandas as pd
 import plotly.express as px
 
@@ -363,6 +365,87 @@ try:
         # **Onglet 4 : Cartographie**
         with tabs[3]:
             st.header("Visualisation du coût des sinistres par état")
+            st.header("Visualisation du coût des sinistres par état")
+            
+            
+        
+            carto_data_path = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/Aggregated_Claims_Data_by_Region.csv"
+            carto_data = pd.read_csv(carto_data_path)
+ 
+            # Créer une carte Folium
+            m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)
+
+            # Définir l'échelle de couleur
+            color_scale = cm.LinearColormap(
+                colors=['#003366', '#008000', '#FFD700'],
+                vmin=carto_data['Total_Claims'].min(),
+                vmax=carto_data['Total_Claims'].max(),
+                caption='Montant des sinitres (R$)'
+            )
+            # Ajouter l'échelle de couleurs à la carte
+            color_scale.add_to(m)
+            # Ajouter des régions sur la carte
+            scale_factor = 1e6
+            max_radius = 30
+            for _, row in carto_data.iterrows():
+                folium.CircleMarker(
+                    location=(row['Latitude'], row['Longitude']),
+                    radius=min(max(row['Total_Claims'] / scale_factor, 5), max_radius),
+                    color=color_scale(row['Total_Claims']),
+                    fill=True,
+                    fill_color=color_scale(row['Total_Claims']),
+                    fill_opacity=0.8,
+                    tooltip=(
+                        f"<strong>{row['Region_Name']}</strong><br>"
+                        f"Total Claims: R$ {round(row['Total_Claims']):,}<br>"
+                        f"Average Claims: R$ {round(row['Average_Claims']):,}"
+                    )
+                ).add_to(m)
+
+            # Afficher la carte dans Streamlit
+            st_folium(m, width=700, height=500)
+
+
+            file_path = 'https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/Cleaned_Merged_Claims_Data.csv'
+            data = pd.read_csv(file_path, sep=';')
+            # Titre pour la nouvelle carte
+            st.header("Visualisation du nombre de sinistre par état")
+
+            # Créer une carte Folium
+            m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4)  # Centré sur le Brésil
+
+            # Définir une échelle de couleur basée sur "number_of_claims_updated"
+            color_scale = cm.LinearColormap(
+                colors=['#003366', '#008000', '#FFD700'],  # Palette gov.br : bleu, vert, jaune
+                vmin=data['number_of_claims_updated'].min(),
+                vmax=data['number_of_claims_updated'].max(),
+                caption='Nombre de sinistre'
+            )
+
+            # Ajouter l'échelle de couleurs à la carte
+            m.add_child(color_scale)
+
+            # Ajouter les régions sur la carte
+            scale_factor = 1e4  # Facteur d'échelle pour la taille des cercles
+            max_radius = 50  # Rayon maximum des cercles
+            for _, row in data.iterrows():
+                radius = max(row['number_of_claims_updated'] / scale_factor, 5)  # Calculer le rayon
+                folium.CircleMarker(
+                    location=(row['Latitude'], row['Longitude']),
+                    radius=min(radius, max_radius),  # Limiter le rayon
+                    color=color_scale(row['number_of_claims_updated']),
+                    fill=True,
+                    fill_color=color_scale(row['number_of_claims_updated']),
+                    fill_opacity=0.8,
+                    tooltip=(
+                        f"<strong>{row['Region_Name']}</strong><br>"
+                        f"Nombre de sinistre : {round(row['number_of_claims_updated']):,}"
+                    )
+                ).add_to(m)
+
+            # Afficher la carte dans Streamlit
+            st_folium(m, width=700, height=500)
+
         # **Onglet 6 : Tarification**
         with tabs[4]:
             st.markdown("""
