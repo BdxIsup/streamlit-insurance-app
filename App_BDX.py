@@ -13,6 +13,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.inspection import PartialDependenceDisplay
+import shap
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Ajouter un style CSS pour personnaliser les couleurs
 def add_custom_styles():
@@ -457,10 +461,6 @@ try:
             st.markdown("""
             Cet onglet fournit un outil réalisant une tarification simplifiée selon une logique de fréquence-sévérité avec deux modèles XGBOOST.
             """)
-            st.markdown("""
-            Cet onglet fournit un outil réalisant une tarification simplifiée selon une logique de fréquence-sévérité avec deux modèles XGBOOST.
-            """)
-
             # Fonction pour télécharger un fichier depuis une URL
             def download_model(url, filename):
                 response = requests.get(url)
@@ -588,6 +588,184 @@ try:
             st.markdown("""
             Cet onglet affiche les graphiques SHAP (SHapley Additive exPlanations) permettant d'interpréter les contributions des variables dans nos deux modèles. Nous mettons en avant uniquement les 10 variables ayant les contributions les plus significatives. Veuillez noter ensuite l'outil d'analyse de dépendance SHAP où vous pouvez vous même choisir le couple de classe à étudier. Par ailleurs, il est important de noter que l'analyse est réalisée à l'échelle des classes, afin d'éviter toute compensation qui pourrait survenir en passant à une échelle plus agrégée, soit celle des variables individuelles.
             """)
+            # Charger les modèles
+            model_frequency_file = "model_pipeline_frequency.pkl"
+            model_severity_file = "model_pipeline_severity.pkl"
+
+            try:
+                # Charger les modèles
+                model_frequency = joblib.load(model_frequency_file)
+                model_severity = joblib.load(model_severity_file)
+
+                # Extraire le préprocesseur et le modèle final
+                preprocessor_frequency = model_frequency.named_steps['preprocessor']
+                final_model_frequency = model_frequency.named_steps['model']
+
+                preprocessor_severity = model_severity.named_steps['preprocessor']
+                final_model_severity = model_severity.named_steps['model']
+
+                # Générer des données synthétiques basées sur les colonnes attendues
+                def generate_synthetic_data(preprocessor, n_samples=100):
+                    """Générer des données synthétiques compatibles avec le préprocesseur."""
+                    feature_names = preprocessor.transformers_[0][1].get_feature_names_out()
+                    num_features = len(feature_names)
+                    data = np.random.rand(n_samples, num_features)
+                    return pd.DataFrame(data, columns=feature_names)
+
+                # Générer des données synthétiques pour fréquence et sévérité
+                X_frequency_synthetic = generate_synthetic_data(preprocessor_frequency)
+                X_severity_synthetic = generate_synthetic_data(preprocessor_severity)
+
+                # Calcul des valeurs SHAP pour la fréquence
+                explainer_frequency = shap.TreeExplainer(final_model_frequency)
+                shap_values_frequency = explainer_frequency.shap_values(X_frequency_synthetic)
+
+                # Calcul des valeurs SHAP pour la sévérité
+                explainer_severity = shap.TreeExplainer(final_model_severity)
+                shap_values_severity = explainer_severity.shap_values(X_severity_synthetic)
+
+                # Affichage des graphiques SHAP
+                st.subheader("Graphiques SHAP")
+
+                # Ligne supérieure : Graphiques d'importance
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.subheader("Importance des variables - Fréquence")
+                    plt.figure(figsize=(10, 5))
+                    shap.summary_plot(
+                        shap_values_frequency,
+                        X_frequency_synthetic,
+                        plot_type="bar",
+                        max_display=10,
+                        show=False
+                    )
+                    st.pyplot(plt.gcf())
+
+                with col2:
+                    st.subheader("Importance des variables - Sévérité")
+                    plt.figure(figsize=(10, 5))
+                    shap.summary_plot(
+                        shap_values_severity,
+                        X_severity_synthetic,
+                        plot_type="bar",
+                        max_display=10,
+                        show=False
+                    )
+                    st.pyplot(plt.gcf())
+
+                # Ligne inférieure : Résumés SHAP
+                col3, col4 = st.columns(2)
+
+                with col3:
+                    st.subheader("Résumé SHAP - Fréquence")
+                    plt.figure(figsize=(10, 5))
+                    shap.summary_plot(
+                        shap_values_frequency,
+                        X_frequency_synthetic,
+                        max_display=10,
+                        show=False
+                    )
+                    st.pyplot(plt.gcf())
+
+                with col4:
+                    st.subheader("Résumé SHAP - Sévérité")
+                    plt.figure(figsize=(10, 5))
+                    shap.summary_plot(
+                        shap_values_severity,
+                        X_severity_synthetic,
+                        max_display=10,
+                        show=False
+                    )
+                    st.pyplot(plt.gcf())
+
+            except Exception as e:
+                st.error(f"Erreur lors de la génération des graphiques SHAP : {e}")
+            
+            # Section pour l'analyse de dépendance SHAP dynamique
+            st.subheader("Analyse de Dépendance Partielle SHAP")
+
+            # Charger les modèles
+            @st.cache_resource
+            def load_models():
+                model_frequency_path = "model_pipeline_frequency.pkl"
+                model_severity_path = "model_pipeline_severity.pkl"
+                model_frequency = joblib.load(model_frequency_path)
+                model_severity = joblib.load(model_severity_path)
+                return model_frequency, model_severity
+
+            # Charger les modèles
+            model_frequency, model_severity = load_models()
+
+            # Extraire les préprocesseurs et modèles finaux
+            preprocessor_frequency = model_frequency.named_steps['preprocessor']
+            final_model_frequency = model_frequency.named_steps['model']
+
+            preprocessor_severity = model_severity.named_steps['preprocessor']
+            final_model_severity = model_severity.named_steps['model']
+
+            # Générer des données synthétiques pour la démonstration
+            def generate_synthetic_data(preprocessor, n_samples=100):
+                """Génère des données synthétiques compatibles avec le préprocesseur."""
+                feature_names = preprocessor.transformers_[0][1].get_feature_names_out()
+                num_features = len(feature_names)
+                data = np.random.rand(n_samples, num_features)
+                return pd.DataFrame(data, columns=feature_names)
+
+            X_frequency_synthetic = generate_synthetic_data(preprocessor_frequency)
+            X_severity_synthetic = generate_synthetic_data(preprocessor_severity)
+
+            # Calculer les valeurs SHAP pour les deux modèles
+            explainer_frequency = shap.TreeExplainer(final_model_frequency)
+            shap_values_frequency = explainer_frequency.shap_values(X_frequency_synthetic)
+
+            explainer_severity = shap.TreeExplainer(final_model_severity)
+            shap_values_severity = explainer_severity.shap_values(X_severity_synthetic)
+
+            # Interface utilisateur : choix dynamique des variables
+            st.subheader("Choisissez une variable principale et une variable d'interaction :")
+
+            # Choix du modèle
+            model_choice = st.radio(
+                "Choisissez le modèle pour l'analyse :",
+                options=["Fréquence", "Sévérité"]
+            )
+
+            # Déterminer les données et valeurs SHAP en fonction du modèle choisi
+            if model_choice == "Fréquence":
+                shap_values = shap_values_frequency
+                X_sample = X_frequency_synthetic
+                feature_names = X_frequency_synthetic.columns
+            else:
+                shap_values = shap_values_severity
+                X_sample = X_severity_synthetic
+                feature_names = X_severity_synthetic.columns
+
+            # Sélection des variables
+            main_feature = st.selectbox("Caractéristique principale", feature_names)
+            interaction_feature = st.selectbox("Caractéristique d'interaction", feature_names)
+
+            # Bouton pour afficher le graphique de dépendance
+            if st.button("Afficher le graphique de dépendance"):
+                try:
+                    # Affichage du graphique de dépendance SHAP avec correction des axes
+                    plt.figure(figsize=(10, 6))
+                    shap.dependence_plot(
+                        main_feature,          # Variable principale (axe X)
+                        shap_values=shap_values,           # Valeurs SHAP
+                        features=X_sample,                 # Données utilisées pour SHAP
+                        interaction_index=interaction_feature  # Variable d'interaction (colorimétrie)
+                    )
+                    st.pyplot(plt.gcf())
+
+
+                    st.write(
+                        f"Le graphique ci-dessus montre la dépendance SHAP pour `{main_feature}` "
+                        f"avec l'interaction `{interaction_feature}` basée sur le modèle **{model_choice}**."
+                    )
+                except Exception as e:
+                    st.error(f"Une erreur est survenue lors de la génération du graphique : {e}")
+
 except FileNotFoundError:
     st.error(f"Fichier introuvable : {file_path}. Vérifiez le chemin.")
 except Exception as e:
