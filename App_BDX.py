@@ -2,7 +2,9 @@ import streamlit as st
 import requests
 import zipfile
 import io
+
 import pandas as pd
+import plotly.express as px
 
 # Ajouter un style CSS pour personnaliser les couleurs
 def add_custom_styles():
@@ -115,6 +117,126 @@ try:
         # **Onglet 2 : Composition du Portefeuille**
         with tabs[1]:
             st.title("Composition du Portefeuille")
+            col1, col2 = st.columns(2)
+
+            # Répartition par tranche d'âge
+            with col1:
+                st.header("Répartition par tranche d'âge")
+                age_distribution = data['AGE_Group'].value_counts().reset_index()
+                age_distribution.columns = ['Tranche d\'âge', 'Nombre']
+                age_fig = px.bar(
+                    age_distribution, 
+                    x='Tranche d\'âge', 
+                    y='Nombre', 
+                    title="Répartition par tranche d'âge",color_discrete_sequence=["#6EAA6B"]
+                )
+                st.plotly_chart(age_fig, use_container_width=True)
+
+            # Répartition par sexe
+            with col2:
+                st.header("Répartition par sexe")
+                gender_distribution = data['SEXO'].value_counts().reset_index()
+                gender_distribution.columns = ['Sexe', 'Nombre']
+                gender_fig = px.pie(
+                    gender_distribution, 
+                    names='Sexe', 
+                    values='Nombre', 
+                    title="Répartition par sexe", color='Sexe',  # Définir les couleurs spécifiques
+                    color_discrete_map={
+                'M': '#A8E6A3',  # Vert clair
+                'F': '#228B22'   # Vert plus foncé
+                    }
+                )
+                st.plotly_chart(gender_fig, use_container_width=True)
+
+            # Répartition par type de couverture
+            st.header("Répartition des types de couverture")
+            coverage_mapping = {
+                1: "Couverture complète",
+                2: "Couverture incendie et vol",
+                3: "Couverture incendie",
+                4: "Indemnisation intégrale",
+                5: "Couverture collision et incendie",
+                9: "Autres"
+            }
+            data['Coverage_Label'] = data['COBERTURA'].map(coverage_mapping)
+            coverage_fig = px.pie(data, names='Coverage_Label', title="Types de couverture", hole=0.4,color_discrete_sequence=["#6EAA6B"])
+             # Ajouter des options de mise en forme
+            coverage_fig.update_traces(textinfo='percent+label')  # Afficher pourcentage + label
+            coverage_fig.update_layout(
+                legend_title="Types de couverture",  # Titre pour la légende
+                height=500,  # Hauteur du graphique
+                width=700    # Largeur du graphique
+            )
+            st.plotly_chart(coverage_fig, use_container_width=True)
+            # Ajouter un mapping des causes de sinistres
+            causa_mapping = {
+                1: "Vol/Rapt",
+                2: "Vol",
+                3: "Rapt",
+                4: "Collision partielle",
+                5: "Collision avec indemnisation intégrale",
+                6: "Incendie",
+                7: "Assistance 24 heures",
+                9: "Autres"
+            }
+
+            # Mapper les causes de sinistres
+            data['CAUSA_MAPPED'] = data['CAUSA'].map(causa_mapping)
+
+            # Calculer la distribution des causes de sinistres
+            cause_distribution = data['CAUSA_MAPPED'].value_counts().reset_index()
+            cause_distribution.columns = ['Cause de sinistre', 'Nombre']
+
+            # Créer un graphique circulaire
+            cause_pie_chart = px.pie(
+                cause_distribution,
+                names='Cause de sinistre',
+                values='Nombre',
+                title="Répartition des causes de sinistre",
+                hole=0.4,color_discrete_sequence=["#6EAA6B"]
+            )
+
+            # Ajouter des options de mise en forme
+            cause_pie_chart.update_traces(textinfo='percent+label')
+            cause_pie_chart.update_layout(
+                legend_title="Cause de sinistre",
+                height=500,
+                width=700
+            )
+
+            # Afficher le graphique dans Streamlit
+            st.header("Répartition des causes de sinistre")
+            st.plotly_chart(cause_pie_chart, use_container_width=True)
+
+            # **Nombre d'occurrences par groupe (GRUPO)**
+            st.header("Modèles de véhicules")
+            group_counts = data['GRUPO'].value_counts().reset_index()
+            group_counts.columns = ['GRUPO', 'Nombre']
+            group_counts = group_counts.sort_values(by='Nombre', ascending=False)
+
+            # Limiter l'affichage initial aux 10 premiers groupes
+            top_10_groups = group_counts.head(10)
+            remaining_groups = group_counts.iloc[10:]  # Les groupes restants
+
+            # Créer le graphique pour les 10 premiers groupes
+            top_10_fig = px.bar(
+                top_10_groups,
+                x='Nombre',
+                y='GRUPO',
+                orientation='h',
+                title="Top 10 des modèles de véhicules assurés",
+                labels={'Nombre': 'Nombre de véhicules', 'GRUPO': 'Groupe'},color_discrete_sequence=["#6EAA6B"]
+            )
+
+            top_10_fig.update_layout(
+                height=400,
+                xaxis=dict(title="Nombre d'Éléments"),
+                yaxis=dict(title="Groupe", automargin=True, categoryorder='total ascending')
+            )
+
+            # Afficher le graphique des 10 premiers groupes
+            st.plotly_chart(top_10_fig, use_container_width=True)
         # **Onglet 3 : Analyse**
         with tabs[2]:
             st.title("Analyse des indemnités")
