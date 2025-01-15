@@ -8,7 +8,6 @@ import requests
 import zipfile
 import io
 import plotly.express as px
-import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
