@@ -29,7 +29,10 @@ def add_custom_styles():
 
 # Appliquer le style personnalisé
 add_custom_styles()
- 
+
+# URLs des logos hébergés sur GitHub
+logo_isup_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/Logo-ISUP.jpg"
+logo_gov_url = "https://raw.githubusercontent.com/jeremyxu-pro/BDX_Project/main/DataViz/gov.png"
  
 try:
     # Charger le logo gov.br en haut, centré
